@@ -9,7 +9,8 @@ export interface HttpRequestConfig {
   method: 'get' | 'post' | 'put' | 'delete'
   params?: Record<string, any>
   data?: any
-  headers?: Record<string, string>
+  /** repeatSubmit 等防重标记为 boolean(三端 axios 拦截器约定),故值不止 string */
+  headers?: Record<string, string | boolean>
   [key: string]: any
 }
 
