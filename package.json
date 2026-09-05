@@ -1,0 +1,27 @@
+{
+  "name": "@agenthub/chat",
+  "version": "0.1.0",
+  "description": "AgentHub 聊天协议 SDK:WebSocket JSON-RPC 传输、Run 事件状态机、渠道工具协议与 REST 封装",
+  "type": "module",
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
+    "./vue": { "types": "./dist/vue.d.ts", "default": "./dist/vue.js" }
+  },
+  "files": ["dist"],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "prepublishOnly": "npm run test && npm run build"
+  },
+  "peerDependencies": { "vue": "^3.0.0" },
+  "peerDependenciesMeta": { "vue": { "optional": true } },
+  "devDependencies": {
+    "typescript": "^5.5.0",
+    "vitest": "^2.0.0",
+    "vue": "^3.4.0"
+  }
+}
