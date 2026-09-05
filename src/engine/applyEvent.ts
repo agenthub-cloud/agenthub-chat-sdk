@@ -10,10 +10,13 @@
  *    applyTokenUsage/applyKbReferences/promptToolConfirm/promptPendingConfirms/finishTurn/
  *    setFinalText/clearStreaming/parseToolAttachments/cleanUserText/readableError(逐字)。
  *
- * 与源的唯一行为偏离(三端合并统一,已注记在 promptToolConfirm):
- * tool 确认回调 resolve false(以及 reject)也必须回传 confirmChatTool(false)。
- * desktop 版只处理 then(其 confirmDanger 只 resolve 不 reject);ruoyi-ui 的取消/关闭回 false。
- * 不统一的话,onToolConfirm 返回 false 时工具线程在后端挂起到渠道超时。
+ * 与源的行为偏离(两处,均为三端合并统一):
+ * 1. tool 确认回调 resolve false(以及 reject)也必须回传 confirmChatTool(false)
+ *    (已注记在 promptToolConfirm)。desktop 版只处理 then(其 confirmDanger 只 resolve 不 reject);
+ *    ruoyi-ui 的取消/关闭回 false。不统一的话,onToolConfirm 返回 false 时工具线程在后端挂起到渠道超时。
+ * 2. 流式文本追加以 `(x.text || '') + ...` 替代源的 `x.text += ...`(text/agent.result/content 三处):
+ *    源在 stepId 命中已存在但无 text 字段的步骤时会拼出 "undefined..." 垃圾串;TS 可选 text 亦要求此写法。
+ *    真值语义一致,属防御性修正。
  *
  * 其余变换均为机械替换:Vue ref → EngineState 字段(turns.value → state.turns、
  * activeRun.value?.runId → state.activeRunId 等);confirmDanger → cb.onToolConfirm;
