@@ -7,6 +7,7 @@
  * 收口为构造注入 rpc/version/onNotice 与删除（resetClientToolsForTest → resetForTest）。
  * 类型层适配（运行时语义不变）：catch (e: any)、FIFO 淘汰处的非空断言、
  * RPC 方法名改用 RPC_METHODS 常量。
+ * 有意偏离：skipped 提示经 onNotice 固定以 'warning' 级别发出（源 toast 无级别参数）。
  */
 import type { ChatRpcClient } from '../transport/chatRpcClient.js'
 import { RPC_METHODS } from '../protocol/rpcMethods.js'
@@ -145,9 +146,6 @@ export function createClientToolRegistry(options: ClientToolRegistryOptions): Cl
     return (h >>> 0).toString(16).padStart(8, '0')
   }
 
-  /**
-   * 会话落库后声明一次。版本相同服务端不写库。
-   */
   // 已成功声明过的会话。首轮 run.create 要不要捎上清单看它。
   const declared = new Set<string>()
 
@@ -178,6 +176,9 @@ export function createClientToolRegistry(options: ClientToolRegistryOptions): Cl
     if (sessionId) declared.add(sessionId)
   }
 
+  /**
+   * 会话落库后声明一次。版本相同服务端不写库。
+   */
   async function declare(sessionId: string | null | undefined) {
     if (!sessionId) return null
     const tools = snapshot()
@@ -194,7 +195,7 @@ export function createClientToolRegistry(options: ClientToolRegistryOptions): Cl
       declared.add(sessionId)
       const skipped = res?.skipped || []
       if (skipped.length) {
-        options.onNotice?.('部分客户端工具未生效：' + skipped.join('、'))
+        options.onNotice?.('部分客户端工具未生效：' + skipped.join('、'), 'warning')
       }
       return res
     } catch (e) {

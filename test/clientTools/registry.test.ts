@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createClientToolRegistry } from '../../src/clientTools/registry.js'
 import type { ChatRpcClient } from '../../src/transport/chatRpcClient.js'
 
@@ -7,6 +7,10 @@ function fakeRpc() {
 }
 
 describe('clientTools registry', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   it('defineClientTool 校验名字与 handler', () => {
     const reg = createClientToolRegistry({ rpc: fakeRpc(), version: '1' })
     expect(() => reg.defineClientTool({ name: '9bad' }, () => '')).toThrow()
@@ -48,6 +52,25 @@ describe('clientTools registry', () => {
     expect(rpc.request).toHaveBeenCalledWith('chat.tool.result', expect.objectContaining({ callId: 'c1', result: 'result-A' }))
   })
 
+  it('handler 运行中收到补发:不重跑也不抢答', async () => {
+    const rpc = fakeRpc()
+    const reg = createClientToolRegistry({ rpc, version: '1' })
+    let release!: (value: string) => void
+    const gate = new Promise<string>(resolve => { release = resolve })
+    const handler = vi.fn(() => gate)
+    reg.defineClientTool({ name: 'slow' }, handler)
+    const event = { callId: 'c3', name: 'slow', args: '{}', sessionId: 's1' }
+    const first = reg.handleToolCallRequest('r1', event as any)
+    // 此时 handler 已被受理但尚未返回;补发同一 callId 到达
+    await reg.handleToolCallRequest('r1', event as any)
+    expect(handler).toHaveBeenCalledTimes(1) // 不重跑
+    expect(rpc.request).not.toHaveBeenCalled() // 不抢答:等首次执行自己回传
+    release('late-result')
+    await first
+    expect(rpc.request).toHaveBeenCalledTimes(1) // 原执行恰好回传一次
+    expect(rpc.request).toHaveBeenCalledWith('chat.tool.result', expect.objectContaining({ callId: 'c3', ok: true, result: 'late-result' }))
+  })
+
   it('handler 卡死被 watchdog 截断为 ok:false', async () => {
     vi.useFakeTimers()
     const rpc = fakeRpc()
@@ -57,6 +80,31 @@ describe('clientTools registry', () => {
     await vi.advanceTimersByTimeAsync(100001)
     await p
     expect(rpc.request).toHaveBeenCalledWith('chat.tool.result', expect.objectContaining({ ok: false, error: expect.stringMatching(/超过 100 秒/) }))
-    vi.useRealTimers()
+  })
+
+  it('handler 抛异常:回传 ok:false 与异常 message', async () => {
+    const rpc = fakeRpc()
+    const reg = createClientToolRegistry({ rpc, version: '1' })
+    reg.defineClientTool({ name: 'boom' }, () => {
+      throw new Error('炸了')
+    })
+    await reg.handleToolCallRequest('r1', { callId: 'c4', name: 'boom' } as any)
+    expect(rpc.request).toHaveBeenCalledWith('chat.tool.result', expect.objectContaining({ callId: 'c4', ok: false, error: '炸了' }))
+  })
+
+  it('未知工具名:立刻回传 ok:false', async () => {
+    const rpc = fakeRpc()
+    const reg = createClientToolRegistry({ rpc, version: '1' })
+    await reg.handleToolCallRequest('r1', { callId: 'c5', name: 'nope' } as any)
+    expect(rpc.request).toHaveBeenCalledWith('chat.tool.result', expect.objectContaining({ callId: 'c5', ok: false, error: expect.stringContaining('本端没有名为') }))
+  })
+
+  it('declare skipped:经 onNotice 以 warning 提示', async () => {
+    const rpc = { request: vi.fn(async () => ({ skipped: ['x'] })) } as unknown as ChatRpcClient
+    const onNotice = vi.fn()
+    const reg = createClientToolRegistry({ rpc, version: '1', onNotice })
+    reg.defineClientTool({ name: 't' }, () => 'ok')
+    await reg.declare('s9')
+    expect(onNotice).toHaveBeenCalledWith('部分客户端工具未生效：x', 'warning')
   })
 })
