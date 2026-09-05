@@ -3,7 +3,10 @@
  * 本函数把 v1 信封投影为现有视图模型。
  */
 
-/** 标准 v1 事件信封(CloudEvents 风格);迁移期允许字段不完整(缺 specversion 时回退 legacy) */
+/**
+ * 标准 v1 事件信封(CloudEvents 风格);迁移期字段可能不完整,
+ * 缺 specversion 或 type 时 normalizeRunEvent 回退 legacy。
+ */
 export interface RunEventV1Envelope {
   specversion?: string
   type: string
@@ -18,6 +21,7 @@ export function normalizeRunEvent(
   eventV1: RunEventV1Envelope | undefined | null,
   legacyEvent: Record<string, any> | null | undefined
 ): NormalizedRunEvent {
+  // 调用方 legacy 事件保证带 type;缺省时以空对象满足形状
   if (!eventV1?.specversion || !eventV1?.type) return (legacyEvent || {}) as NormalizedRunEvent
   const typeMap: Record<string, string> = {
     'ai.run.status.changed': 'run_status',

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { normalizeRunEvent } from '../../src/protocol/runEvent.js'
+import { normalizeRunEvent, type RunEventV1Envelope } from '../../src/protocol/runEvent.js'
 
 const cases: Array<[string, string]> = [
   ['ai.run.status.changed', 'run_status'],
@@ -38,5 +38,13 @@ describe('normalizeRunEvent', () => {
   it('无 specversion/type 时回退 legacy', () => {
     expect(normalizeRunEvent(undefined, { type: 'text', text: 'x' })).toEqual({ type: 'text', text: 'x' })
     expect(normalizeRunEvent({ type: 'ai.run.text.delta' }, { type: 'text' })).toEqual({ type: 'text' })
+  })
+
+  it('v1 未知 type 透传', () => {
+    expect(normalizeRunEvent({ specversion: '1.0', type: 'ai.run.something.new', data: { x: 1 } }, {})).toEqual({ x: 1, type: 'ai.run.something.new' })
+  })
+
+  it('有 specversion 缺 type 时回退 legacy', () => {
+    expect(normalizeRunEvent({ specversion: '1.0' } as RunEventV1Envelope, { type: 'text' })).toEqual({ type: 'text' })
   })
 })
