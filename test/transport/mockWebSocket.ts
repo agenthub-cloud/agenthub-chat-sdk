@@ -13,7 +13,8 @@ export class MockWebSocket {
   close(code = 1000, reason = '') {
     if (this.readyState === MockWebSocket.CLOSED) return
     this.readyState = MockWebSocket.CLOSED
-    this.onclose?.({ code, reason })
+    // 对齐真实 WS 异步语义：close 事件经微任务异步派发，防止测试按错误的同步行为"修"客户端。
+    queueMicrotask(() => this.onclose?.({ code, reason }))
   }
   /* 测试驱动 */
   serverOpen() { this.readyState = MockWebSocket.OPEN; this.onopen?.() }

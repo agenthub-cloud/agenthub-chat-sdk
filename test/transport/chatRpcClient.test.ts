@@ -5,6 +5,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ChatRpcClient, type ChatRpcClientDeps } from '../../src/transport/chatRpcClient.js'
+import { ChatTransportError } from '../../src/transport/errors.js'
 import { installMockWebSocket, MockWebSocket } from './mockWebSocket.js'
 
 function makeDeps(overrides: Partial<ChatRpcClientDeps> = {}): ChatRpcClientDeps {
@@ -140,6 +141,8 @@ describe('ChatRpcClient（移植自 desktop chatRpc.js）', () => {
     release1()
     expect(client.isOpen()).toBeTruthy()
     release2()
+    // close 事件为异步派发（对齐真实 WS），先让微任务落地再断言
+    await vi.advanceTimersByTimeAsync(0)
     expect(client.isOpen()).toBeFalsy()
     expect(socket.readyState).toBe(MockWebSocket.CLOSED)
   })
@@ -166,5 +169,103 @@ describe('ChatRpcClient（移植自 desktop chatRpc.js）', () => {
     expect(client.isOpen()).toBeTruthy()
     const req = rebuilt.sent.find(m => m.method === 'chat.run.subscribe')
     expect(req.params).toEqual({ runId: 'r1', afterSeq: 1 })
+  })
+
+  it('场景7: 退避窗口内手动 connect 失败后，自动重连不停摆', async () => {
+    let ticketCalls = 0
+    const client = new ChatRpcClient(makeDeps({
+      ticketProvider: async () => {
+        ticketCalls += 1
+        if (ticketCalls === 1) return { data: { ticket: 't-1' } }
+        if (ticketCalls === 2) throw new Error('ticket 服务暂不可用')
+        return { data: { ticket: 't-2' } }
+      }
+    }))
+    const release = client.retain()
+    await vi.advanceTimersByTimeAsync(0)
+    const socket = lastSocket()
+    socket.serverOpen()
+    await vi.advanceTimersByTimeAsync(0)
+    socket.serverDrop()
+    // 退避窗口内用户动作（订阅新一轮）触发手动 connect → 票据获取失败
+    await expect(client.subscribe('r2', 0, () => {})).rejects.toThrow('ticket 服务暂不可用')
+    expect(ticketCalls).toBe(2)
+    // 失败后 scheduleReconnect 仍会安排下一次重连（定时器最终触发新握手）
+    await vi.advanceTimersByTimeAsync(2000 + 300)
+    await vi.advanceTimersByTimeAsync(0)
+    expect(ticketCalls).toBe(3)
+    const rebuilt = lastSocket()
+    expect(rebuilt).not.toBe(socket)
+    expect(rebuilt.url).toBe('ws://mock/t-2')
+    rebuilt.serverOpen()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(client.isOpen()).toBeTruthy()
+    release()
+  })
+
+  it('场景8: subscribeSession 断线重连自动补订，首订交付 activeRun', async () => {
+    const client = new ChatRpcClient(makeDeps())
+    const sessionEvents: any[] = []
+    const activeRuns: any[] = []
+    const p = client.subscribeSession('s1', e => sessionEvents.push(e), r => activeRuns.push(r))
+    await vi.advanceTimersByTimeAsync(0)
+    const socket = lastSocket()
+    socket.serverOpen()
+    await vi.advanceTimersByTimeAsync(0)
+    let req = socket.sent.find(m => m.method === 'chat.session.subscribe')
+    expect(req.params).toEqual({ sessionId: 's1' })
+    // 首次订阅与断线重连同路：服务端回的活动运行必须交给 onActiveRun
+    socket.respond(req.id, { activeRun: { runId: 'r9', status: 'running' } })
+    await vi.advanceTimersByTimeAsync(0)
+    await p
+    expect(activeRuns).toEqual([{ runId: 'r9', status: 'running' }])
+    socket.serverMessage({ jsonrpc: '2.0', method: 'chat.session.event', params: { sessionId: 's1', kind: 'run_started' } })
+    expect(sessionEvents).toEqual([{ sessionId: 's1', kind: 'run_started' }])
+    socket.serverDrop()
+    await vi.advanceTimersByTimeAsync(1000 + 300)
+    await vi.advanceTimersByTimeAsync(0)
+    const next = lastSocket()
+    expect(next).not.toBe(socket)
+    next.serverOpen()
+    await vi.advanceTimersByTimeAsync(0)
+    req = next.sent.find(m => m.method === 'chat.session.subscribe')
+    expect(req.params).toEqual({ sessionId: 's1' })
+    next.respond(req.id, {})
+    await vi.advanceTimersByTimeAsync(0)
+    expect(client.isOpen()).toBeTruthy()
+    expect(activeRuns).toHaveLength(1)
+  })
+
+  it('场景9: JSON-RPC 错误响应传播，code/data 保留且不是 transport 错误', async () => {
+    const client = new ChatRpcClient(makeDeps())
+    const p = client.request('chat.run.get', { runId: 'r1' }, 5000)
+    p.catch(() => {})
+    await vi.advanceTimersByTimeAsync(0)
+    const socket = lastSocket()
+    socket.serverOpen()
+    await vi.advanceTimersByTimeAsync(0)
+    const req = socket.sent.find(m => m.method === 'chat.run.get')
+    expect(req.params).toEqual({ runId: 'r1' })
+    socket.respondError(req.id, 'run 不存在')
+    const err = await p.catch(e => e)
+    expect(err).toBeInstanceOf(Error)
+    expect(err).not.toBeInstanceOf(ChatTransportError)
+    expect(err.message).toBe('run 不存在')
+    expect(err.code).toBe(-1)
+    expect(err.data).toBeUndefined()
+  })
+
+  it('场景10: 请求超时 reject ChatTransportError(request-timeout)', async () => {
+    const client = new ChatRpcClient(makeDeps())
+    const p = client.request('chat.run.get', { runId: 'r1' }, 20000)
+    p.catch(() => {})
+    await vi.advanceTimersByTimeAsync(0)
+    const socket = lastSocket()
+    socket.serverOpen()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(socket.sent.some(m => m.method === 'chat.run.get')).toBe(true)
+    await vi.advanceTimersByTimeAsync(20000 + 1)
+    await expect(p).rejects.toBeInstanceOf(ChatTransportError)
+    await expect(p).rejects.toMatchObject({ code: 'request-timeout', message: 'JSON-RPC 请求超时: chat.run.get' })
   })
 })
