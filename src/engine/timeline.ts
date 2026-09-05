@@ -24,6 +24,7 @@
  * (循环内 current 为 null 时会先补一空轮再继续)。
  */
 import { STEP_TYPES, UI_ARTIFACT_NAMES, type ChatMessage, type Step } from '../protocol/eventTypes.js'
+import { isTerminalRunStatus } from '../protocol/status.js'
 import { mergeWorkspaceChanges, type WorkspaceChange } from './workspaceChanges.js'
 import { parseKbHits, type KbHit } from './kbHits.js'
 
@@ -149,10 +150,6 @@ export interface KbCitationState {
   hits: KbHit[]
   files: KbFile[]
   total: number
-}
-
-export function isTerminalRunStatus(status: string): boolean {
-  return ['SUCCEEDED', 'FAILED', 'CANCELLED', 'INTERRUPTED'].includes(status)
 }
 
 /**

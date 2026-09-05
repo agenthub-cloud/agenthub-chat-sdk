@@ -40,6 +40,20 @@ describe('buildTurns', () => {
     expect(agent.steps!.map(s => s.type)).toEqual(['reasoning', 'tool'])
   })
 
+  it('首条消息前无 USER 行(历史分页从轮中间截断):产出 userMsg 为 null 的轮,步骤与引用聚合在位', () => {
+    const turns = buildTurns([
+      { messageType: 'TOOL', toolName: 'searchKnowledge', toolSource: 'builtin', toolArgs: '{}', toolResult: '[1] 《设计文档》 架构/总览 (pgvector)\n    截断前的检索片段', toolSuccess: '0', messageId: 2 },
+      { messageType: 'ASSISTANT', messageKind: 'ASSISTANT_FINAL', content: '截断轮的回答', runId: 'r0', messageId: 3 }
+    ])
+    expect(turns).toHaveLength(1)
+    expect(turns[0].userMsg).toBeNull()
+    expect(turns[0].steps.map(s => s.type)).toEqual(['tool', 'content'])
+    expect(turns[0].completed).toBe(true)
+    expect(turns[0].runId).toBe('r0')
+    expect(turns[0].citations!.length).toBe(1)
+    expect(turns[0].citations![0]).toMatchObject({ docName: '设计文档', content: '截断前的检索片段' })
+  })
+
   it('agent 声明前先到的子消息按 subAgentId 回收嵌套(reclaimOwnedSteps)', () => {
     const turns = buildTurns([
       USER({}),
