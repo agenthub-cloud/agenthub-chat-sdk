@@ -123,28 +123,29 @@ export const EVENT_TYPES = {
   ERROR: 'error',
   CANCELLED: 'cancelled',
   INTERRUPTED: 'interrupted'
-}
+} as const
 
 /** 后端 UiArtifactNames 白名单,与 ChatEventJson.ui 的 name 对齐 */
 export const UI_ARTIFACT_NAMES = {
   KB_REFERENCES: 'kb.references',
   RUN_TOKEN_USAGE: 'run.tokenUsage',
   WORKSPACE_CHANGES: 'workspace.changes'
-}
+} as const
 
 /**
  * 前端支持的产物规格。schemaVersion 为可理解的最高版本;
  * 更高版本忽略,避免乱解析。新增产物只加一行。
  */
-export const UI_ARTIFACT_SPECS: Record<string, { schemaVersion: number; minSchemaVersion?: number }> = {
+export const UI_ARTIFACT_SPECS = {
   [UI_ARTIFACT_NAMES.KB_REFERENCES]: { schemaVersion: 2, minSchemaVersion: 2 },
   [UI_ARTIFACT_NAMES.RUN_TOKEN_USAGE]: { schemaVersion: 1 },
   [UI_ARTIFACT_NAMES.WORKSPACE_CHANGES]: { schemaVersion: 1 }
-}
+} as const satisfies Record<string, { schemaVersion: number; minSchemaVersion?: number }>
 
 export function isSupportedUiArtifact(event?: { name?: string; schemaVersion?: number } | null): boolean {
   if (!event || !event.name) return false
-  const spec = UI_ARTIFACT_SPECS[event.name]
+  // as const 后键被收窄为字面量,按 string 索引需还原为宽松记录类型(纯编译期,运行时不变)
+  const spec = (UI_ARTIFACT_SPECS as Record<string, { schemaVersion: number; minSchemaVersion?: number }>)[event.name]
   if (!spec) return false
   const version = Number(event.schemaVersion)
   if (spec.minSchemaVersion && (!Number.isFinite(version) || version < spec.minSchemaVersion)) {
@@ -161,4 +162,4 @@ export const STEP_TYPES = {
   CONTENT: 'content',
   SUMMARY: 'summary',
   UI: 'ui'
-}
+} as const
