@@ -59,6 +59,7 @@ export interface TimelineMessage extends Omit<ChatMessage, 'sessionId'> {
 
 /**
  * 过程节点子步骤(宽松版):在 Step 之上补历史行字段,子步骤递归为 TimelineStep。
+ * Step.type 已含 'ui'(RunStep 快照的 stepType=ui 行,desktop JSDoc 未列)。
  */
 export interface TimelineStep extends Step {
   /** agent 的子步骤(子智能体内部的思考/工具,嵌套展示) */
@@ -73,6 +74,13 @@ export interface TimelineStep extends Step {
   hasFullToolResult?: boolean
   toolResultLength?: number
   toolArgsLength?: number
+  /** 危险工具待人工确认(RunStep 快照 WAITING / tool_confirm_required;Task 9 补) */
+  pendingConfirm?: boolean
+  confirmId?: string
+  /** 挂在产出工具上的 ui 产物,按 name 键(applyUiEvent/快照恢复;Task 9 补) */
+  uiArtifacts?: Record<string, any>
+  /** ui 步骤的产物载荷(stepType=ui) */
+  payload?: Record<string, any>
 }
 
 /** 一轮的 token 用量(ASSISTANT_FINAL 落轮) */
@@ -82,6 +90,8 @@ export interface TimelineUsage {
   totalTokens: number
   modelName: string | null
   usageSource: string
+  /** run.tokenUsage 实时归并附带(源 applyTokenUsage 写入;Task 9 补) */
+  callCount?: number
 }
 
 /** 按文档归并后的引用文件(legacyFilesFromHits 产出) */
@@ -136,6 +146,10 @@ export interface TimelineTurn {
   terminalMessage?: string
   /** 该轮 @ 过的技能快照(时间线接口随 run 终态带回) */
   skillIds?: number[]
+  /** 实时路径事件游标(applyEvent 记账,缺口恢复按它对账;Task 9 补) */
+  lastEventSeq?: number
+  /** 已应用的 ui 产物幂等键(applyUiEvent 去重,回放不叠两份;Task 9 补) */
+  uiEventIds?: Set<string>
   /** searchKnowledge 命中聚合(去重后) */
   citations?: KbHit[]
   citationFiles?: KbFile[]

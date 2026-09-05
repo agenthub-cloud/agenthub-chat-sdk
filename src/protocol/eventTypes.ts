@@ -52,7 +52,11 @@ export interface Turn {
  * 过程节点子步骤
  */
 export interface Step {
-  type: 'reasoning' | 'tool' | 'agent' | 'content' | 'summary'
+  /**
+   * 补 'ui':RunStep 快照含 stepType=ui 的行(desktop types.js 的 JSDoc 未列,JS 无类型
+   * 故未暴露);ui 步骤不进时间线展示,只归档到产出工具的 uiArtifacts。
+   */
+  type: 'reasoning' | 'tool' | 'agent' | 'content' | 'summary' | 'ui'
   /** content/reasoning 的累积文本 */
   text?: string
   /** tool/agent 的名称 */
