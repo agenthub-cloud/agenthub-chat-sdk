@@ -6,16 +6,26 @@ const USER = (over: object) => ({ messageType: 'USER', content: 'hi', messageId:
 
 describe('buildTurns', () => {
   it('USER→TOOL→ASSISTANT_FINAL 聚合为单轮,usage 落轮', () => {
+    const kbText = '[1] 《设计文档》 架构/总览 (pgvector)\n    向量检索说明段落\n\n[2] 《设计文档》 架构/总览 (pgvector)\n    向量检索说明段落'
     const turns = buildTurns([
       USER({}),
-      { messageType: 'TOOL', toolName: 'searchKnowledge', toolSource: 'builtin', toolArgs: '{}', toolResult: JSON.stringify([{ chunkId: 'c1', docName: 'D', content: 'x' }]), toolSuccess: '0', messageId: 2 },
+      { messageType: 'TOOL', toolName: 'searchKnowledge', toolSource: 'builtin', toolArgs: '{}', toolResult: kbText, toolSuccess: '0', messageId: 2 },
       { messageType: 'ASSISTANT', messageKind: 'ASSISTANT_FINAL', content: '答案', runId: 'r1', promptTokens: 10, completionTokens: 5, messageId: 3 }
     ])
     expect(turns).toHaveLength(1)
     expect(turns[0].completed).toBe(true)
     expect(turns[0].steps.map(s => s.type)).toEqual(['tool', 'content'])
     expect(turns[0].usage).toMatchObject({ promptTokens: 10, completionTokens: 5, totalTokens: 15 })
-    expect(turns[0].citations!.length).toBe(1) // searchKnowledge 命中聚合
+    expect(turns[0].citations!.length).toBe(1) // searchKnowledge 命中聚合;同 docName+content 两块去重后仍 1 条
+    expect(turns[0].citations![0]).toMatchObject({ docName: '设计文档', headingPath: '架构/总览', channel: 'pgvector', content: '向量检索说明段落' })
+    expect(turns[0].citations![0].chunkId).toBeUndefined() // 文本格式无 chunkId 字段,去重键落在 docName|content 分支
+    // 对照:同 docName 不同 content → 去重键不同,得 2 条
+    const contrast = buildTurns([
+      USER({}),
+      { messageType: 'TOOL', toolName: 'searchKnowledge', toolSource: 'builtin', toolArgs: '{}', toolResult: '[1] 《设计文档》 架构/总览 (pgvector)\n    向量检索说明段落', toolSuccess: '0', messageId: 2 },
+      { messageType: 'TOOL', toolName: 'searchKnowledge', toolSource: 'builtin', toolArgs: '{}', toolResult: '[1] 《设计文档》 架构/总览 (pgvector)\n    另一段内容', toolSuccess: '0', messageId: 3 }
+    ])
+    expect(contrast[0].citations!.length).toBe(2)
   })
 
   it('agent 子消息按 parentStepId/agentId 归位嵌套', () => {

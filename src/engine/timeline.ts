@@ -17,9 +17,8 @@
  * 执行节点中断，可重新发起」)不同——desktop 原文如此,两套并存。此处改名为
  * terminalRunLabelForHistory 以免与运行时版混淆,函数体未改动。
  *
- * 与 desktop 的唯一行为差异(经确认的新增兜底):collectKbCitationState 对 searchKnowledge 的
- * toolResult 先尝试按 JSON 命中数组解析(parseJsonHits),失败再回退 parseKbHits 文本解析;
- * desktop 只认文本格式(JSON 命中只出现在实时 kb.references UI artifact 里)。
+ * 与 desktop 的唯一行为差异:无。collectKbCitationState 与 desktop 逐字一致,searchKnowledge 的
+ * toolResult 只按 parseKbHits 文本格式解析(后端 KnowledgeSearchFormats.forModel 存的就是该格式)。
  *
  * TS 移植注记:buildTurns 内闭包处的 `current!` 断言对应源码运行时已保证的非空
  * (循环内 current 为 null 时会先补一空轮再继续)。
@@ -395,7 +394,7 @@ export function collectKbCitationState(steps?: TimelineStep[] | null): KbCitatio
   function walk(list?: TimelineStep[] | null) {
     for (const s of list || []) {
       if (s.type === STEP_TYPES.TOOL && s.name === 'searchKnowledge' && s.result) {
-        const parsed = parseJsonHits(s.result) ?? parseKbHits(s.result)
+        const parsed = parseKbHits(s.result)
         declaredTotal += parsed.length
         for (const h of parsed) addHit(h)
       }
@@ -408,25 +407,6 @@ export function collectKbCitationState(steps?: TimelineStep[] | null): KbCitatio
     files: legacyFilesFromHits(out),
     total: Math.max(declaredTotal, out.length)
   }
-}
-
-/**
- * JSON 兜底(SDK 相对 desktop 的新增,经确认):toolResult 为命中对象数组
- * (kb.references 风格的 chunk 列表)时直接用作 hits;不是 JSON 数组或解析失败返回 null,
- * 回退 parseKbHits 文本解析。文本格式虽以 `[` 开头但 JSON.parse 必失败,行为不受影响。
- */
-function parseJsonHits(result: string): KbHit[] | null {
-  const trimmed = result.trim()
-  if (!trimmed.startsWith('[')) return null
-  let arr: unknown
-  try {
-    arr = JSON.parse(trimmed)
-  } catch (e) {
-    return null
-  }
-  if (!Array.isArray(arr)) return null
-  const hits = arr.filter((h): h is KbHit => !!h && typeof h === 'object')
-  return hits.length ? hits : null
 }
 
 function legacyFilesFromHits(hits?: KbHit[] | null): KbFile[] {
