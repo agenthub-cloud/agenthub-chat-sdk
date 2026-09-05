@@ -2,7 +2,8 @@
  * 移植自 AgentHub 主仓 desktop/src/api/chatRpc.js（ef573ac2），协议语义以主仓
  * docs/聊天执行引擎.md 为准；环境读取（token/票据/WS 地址/退避参数）收口为构造注入。
  * 原文件为协议层副本（extension/src/api/chatRpc.js），后端 RPC/事件变更时两边一起改。
- * 与源的唯一有意语义偏离：connect() 重置 reconnectTimer，修复退避窗口内手动重连失败后自动重连停摆（desktop 侧待同步修复）
+ * 与源的唯一有意行为偏离：connect() 重置 reconnectTimer，修复退避窗口内手动重连失败后自动重连停摆（desktop 侧待同步修复）；
+ * 另 isOpen() 以 ?. 收窄返回类型（真值语义不变），双 diff 审计时勿误判为未认领改动。
  */
 import { normalizeRunEvent } from '../protocol/runEvent.js'
 import { RPC_METHODS } from '../protocol/rpcMethods.js'
