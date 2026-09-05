@@ -7,7 +7,7 @@
  * search `?ticket=` + encodeURIComponent、hash 清空,均与源实现逐行一致。
  */
 
-/** 环境无关的默认 WS 地址构造: baseUrl + /ws/ai/chat?ticket=。base 为空时用 origin。 */
+/** 环境无关的默认 WS 地址构造: baseUrl + /ws/ai/chat?ticket=。base 为空或相对路径时用 origin 解析。 */
 export function defaultWsUrlBuilder(base: string, ticket: string, origin = 'http://localhost'): string {
   const url = new URL(base || '/', origin)
   url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:'
