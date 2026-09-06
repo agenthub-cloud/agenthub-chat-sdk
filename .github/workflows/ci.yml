@@ -1,0 +1,17 @@
+name: ci
+on:
+  push:
+    branches: ['**']
+  pull_request:
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      # typecheck 同时强制 PORTING.md 的「相对 import 必须带 .js 后缀」(NodeNext TS2835)
+      - run: npm run typecheck && npm test && npm run build
