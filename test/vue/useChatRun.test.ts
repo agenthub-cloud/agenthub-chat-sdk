@@ -66,6 +66,33 @@ describe('useChatRun', () => {
     expect(seen.length).toBeGreaterThan(2)
   })
 
+  it('每次事件为 turn/step 生成新引用,流式正文无需刷新即可传给消息子组件', async () => {
+    const client = makeClient()
+    const run = useChatRun(client)
+
+    await run.send('hi', { sessionId: 's1' })
+    const beforeText = run.state.value.turns[0]
+
+    const onEvent = client.rpc.subscribe.mock.calls[0][2] as (event: any, envelope: any) => void
+    onEvent({ type: EVENT_TYPES.TEXT, stepId: 'answer', text: '第一段' }, { runId: 'r1', seq: 1 })
+    await nextTick()
+
+    const afterFirstText = run.state.value.turns[0]
+    const firstStep = afterFirstText.steps[0]
+    expect(afterFirstText).not.toBe(beforeText)
+    expect(beforeText.steps).toEqual([])
+    expect(firstStep.text).toBe('第一段')
+
+    onEvent({ type: EVENT_TYPES.TEXT, stepId: 'answer', text: '第二段' }, { runId: 'r1', seq: 2 })
+    await nextTick()
+
+    const afterSecondText = run.state.value.turns[0]
+    expect(afterSecondText).not.toBe(afterFirstText)
+    expect(afterSecondText.steps[0]).not.toBe(firstStep)
+    expect(firstStep.text).toBe('第一段')
+    expect(afterSecondText.steps[0].text).toBe('第一段第二段')
+  })
+
   it('返回面:engine 方法可用,destroy 释放 retain 并摘除连接监听', async () => {
     const client = makeClient()
     const released = vi.fn()
