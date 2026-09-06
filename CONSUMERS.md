@@ -1,4 +1,4 @@
-# 消费端接入(@agenthub/chat 私有包)
+# 消费端接入(@agenthub-cloud/chat 私有包)
 
 包发布在 **GitHub Packages**(`https://npm.pkg.github.com`,restricted 私有),不在 npmjs.com。
 npm / pnpm 通用,按下面三步接。
@@ -6,11 +6,11 @@ npm / pnpm 通用,按下面三步接。
 ## 1. 项目级 `.npmrc`(提交进各前端仓库)
 
 ```ini
-@agenthub:registry=https://npm.pkg.github.com
+@agenthub-cloud:registry=https://npm.pkg.github.com
 always-auth=true
 ```
 
-只影响 `@agenthub/*` scope,其余依赖照常走默认 registry(npmmirror/npmjs 均不受影响)。
+只影响 `@agenthub-cloud/*` scope,其余依赖照常走默认 registry(npmmirror/npmjs 均不受影响)。
 
 ## 2. 本机 token(用户级 `~/.npmrc`,不要提交)
 
@@ -25,8 +25,8 @@ always-auth=true
 ## 3. 安装
 
 ```bash
-npm install @agenthub/chat        # 或 pnpm add @agenthub/chat
-# Vue 适配层: @agenthub/chat/vue(同包的子路径,无需单独安装)
+npm install @agenthub-cloud/chat        # 或 pnpm add @agenthub-cloud/chat
+# Vue 适配层: @agenthub-cloud/chat/vue(同包的子路径,无需单独安装)
 ```
 
 ## Jenkins CI
@@ -38,7 +38,7 @@ Pipeline 里在 install 前写入临时 `~/.npmrc`:
 withCredentials([string(credentialsId: 'github-packages-token', variable: 'GP_TOKEN')]) {
   sh '''
     echo "//npm.pkg.github.com/:_authToken=${GP_TOKEN}" >> ~/.npmrc
-    echo "@agenthub:registry=https://npm.pkg.github.com" >> ~/.npmrc
+    echo "@agenthub-cloud:registry=https://npm.pkg.github.com" >> ~/.npmrc
     npm ci   # 或 pnpm install
   '''
 }
@@ -47,10 +47,10 @@ withCredentials([string(credentialsId: 'github-packages-token', variable: 'GP_TO
 ## 版本与更新
 
 - 版本随 git tag 走:SDK 仓打 `v*` tag → Actions 自动 typecheck/test/build → 发布 restricted 包;
-- 升级:`npm up @agenthub/chat`,CHANGELOG 看 SDK 仓 Releases。
+- 升级:`npm up @agenthub-cloud/chat`,CHANGELOG 看 SDK 仓 Releases。
 
 ## 常见问题
 
 - **401/403**:token 没配或没勾 `read:packages`;`always-auth=true` 缺失时 npm 偶尔不发鉴权头。
-- **404**:scope 行没配(`@agenthub:registry=...`),npm 去默认 registry 找 `@agenthub/chat` 当然找不到。
+- **404**:scope 行没配(`@agenthub:registry=...`),npm 去默认 registry 找 `@agenthub-cloud/chat` 当然找不到。
 - **GitHub Actions 内安装**:无需 PAT,用 `GITHUB_TOKEN`(勾 `packages: read` 权限)即可。

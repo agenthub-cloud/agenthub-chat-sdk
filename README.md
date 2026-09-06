@@ -1,6 +1,6 @@
-# @agenthub/chat
+# @agenthub-cloud/chat
 
-AgentHub 聊天协议 SDK：WebSocket JSON-RPC 传输、Run 事件无头状态机、渠道工具协议与 chat REST 封装。框架无关（主入口零运行时依赖），Vue 3 适配层走 `@agenthub/chat/vue`。
+AgentHub 聊天协议 SDK：WebSocket JSON-RPC 传输、Run 事件无头状态机、渠道工具协议与 chat REST 封装。框架无关（主入口零运行时依赖），Vue 3 适配层走 `@agenthub-cloud/chat/vue`。
 
 > 协议语义的权威文档在 [AgentHub 主仓](https://github.com/980911302/agenthup)：
 >
@@ -13,16 +13,16 @@ AgentHub 聊天协议 SDK：WebSocket JSON-RPC 传输、Run 事件无头状态�
 ## 安装
 
 ```bash
-npm install @agenthub/chat          # 框架无关核心
-npm install @agenthub/chat/vue      # Vue 3 组合式函数(可选,peerDependency vue ^3)
+npm install @agenthub-cloud/chat          # 框架无关核心
+npm install @agenthub-cloud/chat/vue      # Vue 3 组合式函数(可选,peerDependency vue ^3)
 ```
 
 ## 快速开始（Vue 3）
 
 ```ts
 import axios from 'axios'
-import { createChatClient } from '@agenthub/chat'
-import { useChatRun, useConnectionState } from '@agenthub/chat/vue'
+import { createChatClient } from '@agenthub-cloud/chat'
+import { useChatRun, useConnectionState } from '@agenthub-cloud/chat/vue'
 
 // http 与宿主 axios 封装兼容；环境差异只剩这一个配置对象
 const client = createChatClient({
@@ -56,7 +56,7 @@ export default {
 ## Headless（不用 Vue）
 
 ```ts
-import { createChatClient, createChatEngine } from '@agenthub/chat'
+import { createChatClient, createChatEngine } from '@agenthub-cloud/chat'
 
 const client = createChatClient({ /* 同上 */ })
 const engine = createChatEngine(client, { onToolConfirm: async () => true })
@@ -70,7 +70,7 @@ await engine.send('你好', { sessionId: 's1' })
 ## 渠道工具（执行体在客户端的工具）
 
 ```ts
-import { createClientToolRegistry } from '@agenthub/chat'
+import { createClientToolRegistry } from '@agenthub-cloud/chat'
 
 const tools = createClientToolRegistry({ rpc: client.rpc, version: '1.0.0' })
 tools.defineClientTool(
