@@ -10,7 +10,7 @@
  * 因此每次通知都为 turn 和递归 steps 生成新的渲染快照；engine 的可写状态仍保持
  * 原对象，不把 Vue 的响应式代理或渲染副本反向写回无头状态机。
  */
-import { onUnmounted, ref, type Ref } from 'vue'
+import { getCurrentInstance, onUnmounted, ref, type Ref } from 'vue'
 import type { ChatClient } from '../client.js'
 import { createChatEngine, type ChatEngine, type ChatEngineOptions } from '../engine/engine.js'
 import type { EngineState } from '../engine/applyEvent.js'
@@ -61,6 +61,7 @@ export function useChatRun(client: ChatClient, options: UseChatRunOptions = {}):
     // 整体替换结构快照:见文件头「响应式方案」注记
     state.value = { ...s, turns: snapshotTurns(s.turns) }
   })
-  onUnmounted(off)
+  // 组合式函数也允许在独立状态容器/测试中使用；只有组件 setup 内才注册生命周期。
+  if (getCurrentInstance()) onUnmounted(off)
   return Object.assign(engine, { state })
 }

@@ -13,9 +13,10 @@ AgentHub 聊天协议 SDK：WebSocket JSON-RPC 传输、Run 事件无头状态�
 ## 安装
 
 ```bash
-npm install @agenthub-cloud/chat          # 框架无关核心
-npm install @agenthub-cloud/chat/vue      # Vue 3 组合式函数(可选,peerDependency vue ^3)
+npm install @agenthub-cloud/chat
 ```
+
+框架无关能力从主入口导入；Vue 3 组合式函数由同一个包的 `/vue` 子路径导出。
 
 ## 快速开始（Vue 3）
 

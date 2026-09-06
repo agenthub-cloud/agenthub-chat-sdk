@@ -4,11 +4,34 @@
  * 模块级 `request` 依赖改为 `createChatRest(http)` 工厂闭包绑定注入的 HttpClientLike;
  * url/method/params/data 与 `headers: { repeatSubmit: false }`(三端 axios 拦截器的防重标记)逐字保留。
  */
-import type { HttpClientLike } from '../http/types.js'
+import { requestAs, type HttpClientLike, type HttpResult } from '../http/types.js'
+
+export interface ChatRunView {
+  runId: string
+  status: string
+  errorMessage?: string
+  inputText?: string
+  [key: string]: unknown
+}
+
+export interface ChatRunStateView {
+  run?: ChatRunView
+  snapshotSeq?: number
+  userMessage?: unknown
+  finalMessage?: unknown
+  steps?: unknown[]
+  [key: string]: unknown
+}
+
+export interface CreateChatRunInput {
+  sessionId: string
+  inputText?: string
+  [key: string]: unknown
+}
 
 export function createChatRest(http: HttpClientLike) {
-  function createChatRun(data: any) {
-    return http.request({
+  function createChatRun(data: CreateChatRunInput) {
+    return requestAs<HttpResult<ChatRunView>>(http, {
       url: '/ai/chat/run',
       method: 'post',
       data,
@@ -17,23 +40,23 @@ export function createChatRest(http: HttpClientLike) {
   }
 
   function getChatRun(runId: string) {
-    return http.request({ url: '/ai/chat/run/' + runId, method: 'get' })
+    return requestAs<HttpResult<ChatRunView>>(http, { url: '/ai/chat/run/' + runId, method: 'get' })
   }
 
   function getChatRunState(runId: string) {
-    return http.request({ url: '/ai/chat/run/' + runId + '/state', method: 'get' })
+    return requestAs<HttpResult<ChatRunStateView>>(http, { url: '/ai/chat/run/' + runId + '/state', method: 'get' })
   }
 
   function getActiveChatRun(sessionId: string) {
-    return http.request({ url: '/ai/chat/run/active', method: 'get', params: { sessionId } })
+    return requestAs<HttpResult<ChatRunView | null>>(http, { url: '/ai/chat/run/active', method: 'get', params: { sessionId } })
   }
 
   function getLatestChatRun(sessionId: string) {
-    return http.request({ url: '/ai/chat/run/latest', method: 'get', params: { sessionId } })
+    return requestAs<HttpResult<ChatRunView | null>>(http, { url: '/ai/chat/run/latest', method: 'get', params: { sessionId } })
   }
 
   function cancelChatRun(runId: string) {
-    return http.request({
+    return requestAs<HttpResult<ChatRunView>>(http, {
       url: '/ai/chat/run/' + runId + '/cancel',
       method: 'post',
       headers: { repeatSubmit: false }
@@ -41,7 +64,7 @@ export function createChatRest(http: HttpClientLike) {
   }
 
   function confirmChatTool(runId: string, confirmId: string, approved?: boolean) {
-    return http.request({
+    return requestAs<HttpResult<unknown>>(http, {
       url: '/ai/chat/run/' + runId + '/tool-confirm',
       method: 'post',
       data: { confirmId, approved: !!approved },
@@ -50,7 +73,7 @@ export function createChatRest(http: HttpClientLike) {
   }
 
   function createChatWebSocketTicket() {
-    return http.request({
+    return requestAs<HttpResult<{ ticket?: string }>>(http, {
       url: '/ai/chat/ws-ticket',
       method: 'post',
       headers: { repeatSubmit: false }
@@ -58,7 +81,7 @@ export function createChatRest(http: HttpClientLike) {
   }
 
   function getContextUsage(sessionId: string, agentId?: number) {
-    return http.request({
+    return requestAs<HttpResult<Record<string, unknown>>>(http, {
       url: '/ai/chat/session/' + sessionId + '/context',
       method: 'get',
       params: agentId != null ? { agentId } : {}
@@ -66,7 +89,7 @@ export function createChatRest(http: HttpClientLike) {
   }
 
   function rollbackLastTurn(sessionId: string, agentId?: number) {
-    return http.request({
+    return requestAs<HttpResult<ChatRunView | null>>(http, {
       url: '/ai/chat/session/' + sessionId + '/last-turn',
       method: 'delete',
       params: agentId != null ? { agentId } : {}

@@ -10,8 +10,35 @@
  */
 // —— 装配(client)——
 export { createChatClient, type ChatClient, type ChatClientConfig, type ReconnectOptions } from './client.js'
-export type { HttpClientLike, HttpResult, HttpRequestConfig } from './http/types.js'
-export type { ChatRest } from './rest/chatRest.js'
+export { requestAs, type HttpClientLike, type HttpResult, type HttpRequestConfig, type HttpParam } from './http/types.js'
+export type { ChatRest, ChatRunView, ChatRunStateView, CreateChatRunInput } from './rest/chatRest.js'
+
+// —— 文件 / 知识库 / 资源域 ——
+export {
+  createUserFilesApi,
+  type UserFilesApi,
+  type UserFile,
+  type UserFileListResult,
+  type UserFileQuota,
+  type AttachedUserFile,
+  type EntityId
+} from './domains/files.js'
+export {
+  createKnowledgeBasesApi,
+  type KnowledgeBasesApi,
+  type KnowledgeBasesApiOptions,
+  type KnowledgeBase,
+  type KnowledgeDocument,
+  type KnowledgeGraphExploreInput,
+  type KnowledgeDocumentEventOptions
+} from './domains/knowledgeBases.js'
+export {
+  createResourcesApi,
+  type ResourcesApi,
+  type SkillResource,
+  type SkillResourceFile,
+  type ResourceListResult
+} from './domains/resources.js'
 
 // —— transport ——
 export { defaultWsUrlBuilder } from './transport/wsUrl.js'
