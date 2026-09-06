@@ -4,6 +4,12 @@
   "description": "AgentHub 聊天协议 SDK:WebSocket JSON-RPC 传输、Run 事件状态机、渠道工具协议与 REST 封装",
   "type": "module",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/980911302/agenthub-chat-sdk.git"
+  },
+  "homepage": "https://github.com/980911302/agenthub-chat-sdk#readme",
+  "bugs": "https://github.com/980911302/agenthub-chat-sdk/issues",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
