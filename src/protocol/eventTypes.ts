@@ -119,6 +119,8 @@ export const EVENT_TYPES = {
   TOOL_CONFIRM_REQUIRED: 'tool_confirm_required',
   TOOL_CALL_REQUEST: 'tool_call_request',
   CONTEXT_CLEANED: 'context_cleaned',
+  CONTEXT_OVERFLOW_TRIMMED: 'context_overflow_trimmed',
+  MEDIA_GATED: 'media_gated',
   AGENT_START: 'agent_start',
   AGENT_END: 'agent_end',
   RUN_STATUS: 'run_status',

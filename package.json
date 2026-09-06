@@ -1,6 +1,6 @@
 {
   "name": "@agenthub-cloud/chat",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "AgentHub 多端 SDK：聊天协议、运行状态机、文件、知识库与资源服务",
   "publishConfig": { "registry": "https://npm.pkg.github.com" },
   "type": "module",

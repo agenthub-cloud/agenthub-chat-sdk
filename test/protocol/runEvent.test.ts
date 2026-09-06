@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { normalizeRunEvent, type RunEventV1Envelope } from '../../src/protocol/runEvent.js'
+import { normalizeRunEvent, RUN_EVENT_TYPE_MAP, type RunEventV1Envelope } from '../../src/protocol/runEvent.js'
 
 const cases: Array<[string, string]> = [
+  ['ai.run.started', 'run_status'],
   ['ai.run.status.changed', 'run_status'],
   ['ai.run.text.delta', 'text'],
   ['ai.run.reasoning.delta', 'reasoning'],
@@ -12,6 +13,7 @@ const cases: Array<[string, string]> = [
   ['ai.run.agent.started', 'agent_start'],
   ['ai.run.agent.completed', 'agent_end'],
   ['ai.run.ui.published', 'ui'],
+  ['ai.run.media.gated', 'media_gated'],
   ['ai.run.completed', 'done'],
   ['ai.run.failed', 'error'],
   ['ai.run.cancelled', 'cancelled'],
@@ -19,6 +21,11 @@ const cases: Array<[string, string]> = [
 ]
 
 describe('normalizeRunEvent', () => {
+  it('完整登记 17 个 Java v1 事件类型', () => {
+    expect(Object.keys(RUN_EVENT_TYPE_MAP)).toHaveLength(17)
+    expect(new Set(Object.keys(RUN_EVENT_TYPE_MAP))).toEqual(new Set(cases.map(([type]) => type).concat('ai.run.context.compacted')))
+  })
+
   it.each(cases)('%s → %s', (v1, legacy) => {
     expect(normalizeRunEvent({ specversion: '1.0', type: v1, data: {} }, {})).toMatchObject({ type: legacy })
   })

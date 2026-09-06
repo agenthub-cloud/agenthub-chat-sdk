@@ -35,6 +35,14 @@ describe('applyEvent', () => {
     expect(turn.runStatus).toBe('RUNNING')
   })
 
+  it('上下文溢出和媒体门控产生可见摘要', () => {
+    const { turn, apply } = run()
+    apply({ type: EVENT_TYPES.CONTEXT_OVERFLOW_TRIMMED, tokensBefore: 12000, tokensAfter: 8000, turnsDropped: 3 })
+    apply({ type: EVENT_TYPES.MEDIA_GATED, accepted: 1, rejected: [{ modality: 'video', label: '视频', count: 2 }] })
+    expect(turn.steps[0]).toMatchObject({ type: 'summary', text: expect.stringContaining('已移除最早 3 轮') })
+    expect(turn.steps[1]).toMatchObject({ type: 'summary', text: expect.stringContaining('2 个媒体附件未进入模型上下文：视频') })
+  })
+
   it('tool_start/tool_end 同 stepId 复用卡片', () => {
     const { turn, apply } = run()
     apply({ type: EVENT_TYPES.TOOL_START, stepId: 's1', name: 'shell', args: '***' })

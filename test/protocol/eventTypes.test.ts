@@ -4,7 +4,7 @@ import { isTerminalRunStatus, terminalRunLabel } from '../../src/protocol/status
 
 describe('eventTypes', () => {
   it('事件类型常量与后端 ChatEventJson 对齐', () => {
-    expect(EVENT_TYPES).toMatchObject({ TEXT: 'text', TOOL_START: 'tool_start', TOOL_CONFIRM_REQUIRED: 'tool_confirm_required', TOOL_CALL_REQUEST: 'tool_call_request', AGENT_START: 'agent_start', DONE: 'done' })
+    expect(EVENT_TYPES).toMatchObject({ TEXT: 'text', TOOL_START: 'tool_start', TOOL_CONFIRM_REQUIRED: 'tool_confirm_required', TOOL_CALL_REQUEST: 'tool_call_request', CONTEXT_OVERFLOW_TRIMMED: 'context_overflow_trimmed', MEDIA_GATED: 'media_gated', AGENT_START: 'agent_start', DONE: 'done' })
     expect(STEP_TYPES).toMatchObject({ TOOL: 'tool', AGENT: 'agent', CONTENT: 'content' })
     expect(UI_ARTIFACT_NAMES.KB_REFERENCES).toBe('kb.references')
   })

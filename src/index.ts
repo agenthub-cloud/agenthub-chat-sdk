@@ -87,4 +87,4 @@ export {
 export { EVENT_TYPES, STEP_TYPES, UI_ARTIFACT_NAMES, UI_ARTIFACT_SPECS, isSupportedUiArtifact } from './protocol/eventTypes.js'
 export { RPC_METHODS } from './protocol/rpcMethods.js'
 export { isTerminalRunStatus, terminalRunLabel } from './protocol/status.js'
-export { normalizeRunEvent, type RunEventV1Envelope, type NormalizedRunEvent } from './protocol/runEvent.js'
+export { normalizeRunEvent, RUN_EVENT_TYPE_MAP, type RunEventV1Envelope, type NormalizedRunEvent } from './protocol/runEvent.js'

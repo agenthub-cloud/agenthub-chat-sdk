@@ -359,6 +359,29 @@ function applyTurnEvent(state: EngineState, turn: TimelineTurn, event: any, enve
       steps.push(note)
       break
     }
+    case EVENT_TYPES.CONTEXT_OVERFLOW_TRIMMED: {
+      const note = {
+        type: STEP_TYPES.SUMMARY,
+        text: `上下文已达上限，已移除最早 ${event.turnsDropped ?? 0} 轮（约 ${event.tokensBefore ?? '?'} → ${event.tokensAfter ?? '?'} token）`,
+        streaming: false
+      }
+      steps.push(note)
+      break
+    }
+    case EVENT_TYPES.MEDIA_GATED: {
+      const rejected = Array.isArray(event.rejected) ? event.rejected : []
+      const rejectedCount = rejected.reduce((sum: number, item: any) => sum + Math.max(Number(item?.count) || 0, 0), 0)
+      if (rejectedCount > 0) {
+        const labels = rejected.map((item: any) => item?.label || item?.modality).filter(Boolean)
+        const detail = labels.length ? `：${Array.from(new Set(labels)).join('、')}` : ''
+        steps.push({
+          type: STEP_TYPES.SUMMARY,
+          text: `${rejectedCount} 个媒体附件未进入模型上下文${detail}`,
+          streaming: false
+        })
+      }
+      break
+    }
     case EVENT_TYPES.TOOL_START: {
       let step: TimelineStep | null = findStepById(turn.steps, stepId)
       if (!step) {
